@@ -3,7 +3,7 @@ bl_info = {
     "author" : "Ashrindy; Turk645 and Knuxfan24 - file format research",
     "description" : "",
     "blender" : (2, 80, 0),
-    "version" : (0, 0, 1),
+    "version" : (0, 0, 2),
     "location" : "",
     "warning" : "",
     "category" : "Generic"
@@ -12,7 +12,7 @@ bl_info = {
 import bpy
 
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty
+from bpy.props import StringProperty, BoolProperty
 from bpy.types import Operator
 
 from . import importPointCloud
@@ -40,6 +40,8 @@ class ImportPointCloud(Operator, ImportHelper):
     filename_ext = ".pcmodel"
     filter_glob: StringProperty(default="*.pcmodel", options={"HIDDEN"})
     filepath: StringProperty(subtype='FILE_PATH')
+    ImportUvs: BoolProperty(name="Import UVs", description="If not needed, it is recommended to turn this off, because it does slow the import process.", default=True)
+    ImportShadowModels: BoolProperty(name="Import Shadow Models", description="If not needed, it is recommended to turn this off, because it does slow the import process.", default=True)
 
     def execute(self, context):
         print(bpy.context.scene.HedgeNeedle)

@@ -39,34 +39,31 @@ for dll_name in dll_names:
 from PointCloudBlender import PointCloudReader
 from PointCloudBlender import ModelReader
 
-def importPointCloud(importer):
-    pc = PointCloudReader.LoadPointCloud(importer.filepath)
-    collection = bpy.data.collections.new(os.path.basename(importer.filepath))
-    bpy.context.scene.collection.children.link(collection)
-    for i in pc:
-        if os.path.exists(dirname(importer.filepath) + "\\" + i.ModelName + ".terrain-model"):
-            model = ModelReader.Model(dirname(importer.filepath) + "\\" + i.ModelName + ".terrain-model", bpy.context.scene.HedgeNeedle)
-            for Mesh in model.meshes:
-                mesh1 = bpy.data.meshes.new(i.ModelName + " Mesh")
-                mesh1.use_auto_smooth = True
-                ob = bpy.data.objects.new(i.InstanceName, mesh1)
-                ob.location = (-i.Position.X, i.Position.Z, i.Position.Y)
-                ob.rotation_euler = (i.Rotation.X, i.Rotation.Z, i.Rotation.Y)
-                collection.objects.link(ob)
-                bpy.context.view_layer.objects.active = ob
-                ob.select_set(True)
-                mesh = bpy.context.object.data
-                bm = bmesh.new()
-                for v in Mesh.verts:
-                    bm.verts.new((-v.X, v.Z, v.Y))
-                list = [v for v in bm.verts]
-                for f in Mesh.faces:
-                    try:
-                        bm.faces.new((list[f.x], list[f.y], list[f.z]))
-                    except:
-                        continue
-                bm.to_mesh(mesh)
+def importModel(i, importer, collection):
+    if os.path.exists(dirname(importer.filepath) + "\\" + i.ModelName + ".terrain-model"):
+        model = ModelReader.Model(dirname(importer.filepath) + "\\" + i.ModelName + ".terrain-model", bpy.context.scene.HedgeNeedle)
+        for Mesh in model.meshes:
+            mesh1 = bpy.data.meshes.new(i.ModelName + " Mesh")
+            mesh1.use_auto_smooth = True
+            ob = bpy.data.objects.new(i.InstanceName, mesh1)
+            ob.location = (-i.Position.X, i.Position.Z, i.Position.Y)
+            ob.rotation_euler = (i.Rotation.X, i.Rotation.Z, i.Rotation.Y)
+            collection.objects.link(ob)
+            bpy.context.view_layer.objects.active = ob
+            ob.select_set(True)
+            mesh = bpy.context.object.data
+            bm = bmesh.new()
+            for v in Mesh.verts:
+                bm.verts.new((-v.X, v.Z, v.Y))
+            list = [v for v in bm.verts]
+            for f in Mesh.faces:
+                try:
+                    bm.faces.new((list[f.x], list[f.y], list[f.z]))
+                except:
+                    continue
+            bm.to_mesh(mesh)
 
+            if importer.ImportUvs:
                 if Mesh.uvs != []:
                     uv_layer = bm.loops.layers.uv.verify()
                 if Mesh.uvs1 != []:
@@ -95,14 +92,26 @@ def importPointCloud(importer):
                             l[uv4_layer].uv[0] = Mesh.uvs3[l.vert.index].X
                             l[uv4_layer].uv[1] = Mesh.uvs3[l.vert.index].Y
                 bm.to_mesh(mesh)
-                bm.free()
+            bm.free()
 
 
-                MeshMat = bpy.data.materials.get(Mesh.matName)
-                if not MeshMat:
-                    MeshMat = bpy.data.materials.new(Mesh.matName)
+            MeshMat = bpy.data.materials.get(Mesh.matName)
+            if not MeshMat:
+                MeshMat = bpy.data.materials.new(Mesh.matName)
 
-                if len(ob.data.materials)>0:
-                    ob.data.materials[0]=MeshMat
-                else:
-                    ob.data.materials.append(MeshMat)
+            if len(ob.data.materials)>0:
+                ob.data.materials[0]=MeshMat
+            else:
+                ob.data.materials.append(MeshMat)
+
+def importPointCloud(importer):
+    pc = PointCloudReader.LoadPointCloud(importer.filepath)
+    collection = bpy.data.collections.new(os.path.basename(importer.filepath))
+    bpy.context.scene.collection.children.link(collection)
+    for i in pc:
+        if "shd" in i.InstanceName and importer.ImportShadowModels:
+            pass
+        elif "shdw" in i.InstanceName and importer.ImportShadowModels:
+            pass
+        else:
+            importModel(i, importer, collection)
