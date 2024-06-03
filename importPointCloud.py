@@ -66,4 +66,43 @@ def importPointCloud(importer):
                     except:
                         continue
                 bm.to_mesh(mesh)
+
+                if Mesh.uvs != []:
+                    uv_layer = bm.loops.layers.uv.verify()
+                if Mesh.uvs1 != []:
+                    uv2_layer = bm.loops.layers.uv.new('UVMap2')
+                if Mesh.uvs2 != []:
+                    uv3_layer = bm.loops.layers.uv.new('UVMap3')
+                if Mesh.uvs3 != []:
+                    uv4_layer = bm.loops.layers.uv.new('UVMap4')
+
+                Normals = []
+                for f in bm.faces:
+                    f.smooth=True
+                    for l in f.loops:
+                        if Mesh.normals != []:
+                            Normals.append(Mesh.normals[l.vert.index])
+                        if Mesh.uvs != []:
+                            l[uv_layer].uv[0]  = Mesh.uvs[l.vert.index].X
+                            l[uv_layer].uv[1]  = Mesh.uvs[l.vert.index].Y
+                        if Mesh.uvs1 != []:
+                            l[uv2_layer].uv[0] = Mesh.uvs1[l.vert.index].X
+                            l[uv2_layer].uv[1] = Mesh.uvs1[l.vert.index].Y
+                        if Mesh.uvs2 != []:
+                            l[uv3_layer].uv[0] = Mesh.uvs2[l.vert.index].X
+                            l[uv3_layer].uv[1] = Mesh.uvs2[l.vert.index].Y
+                        if Mesh.uvs3 != []:
+                            l[uv4_layer].uv[0] = Mesh.uvs3[l.vert.index].X
+                            l[uv4_layer].uv[1] = Mesh.uvs3[l.vert.index].Y
+                bm.to_mesh(mesh)
                 bm.free()
+
+
+                MeshMat = bpy.data.materials.get(Mesh.matName)
+                if not MeshMat:
+                    MeshMat = bpy.data.materials.new(Mesh.matName)
+
+                if len(ob.data.materials)>0:
+                    ob.data.materials[0]=MeshMat
+                else:
+                    ob.data.materials.append(MeshMat)
