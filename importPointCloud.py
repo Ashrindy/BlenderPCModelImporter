@@ -1,7 +1,7 @@
 import os, bpy, bmesh, math
 from os.path import dirname
 
-ADDON_DIR = dirname(dirname(dirname(os.path.realpath(__file__)))) + "\\BlenderPCModelImporter"
+ADDON_DIR = dirname(dirname(dirname(os.path.realpath(__file__)))) + "\\addons\\BlenderPCModelImporter"
 print(ADDON_DIR)
 ADDON_NAME = os.path.basename(ADDON_DIR)
 FILEPATH = ""
