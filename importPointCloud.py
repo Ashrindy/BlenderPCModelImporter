@@ -1,4 +1,4 @@
-import os, bpy, bmesh
+import os, bpy, bmesh, math
 from os.path import dirname
 
 ADDON_DIR = dirname(dirname(dirname(os.path.realpath(__file__)))) + "\\BlenderPCModelImporter"
@@ -26,7 +26,8 @@ except ModuleNotFoundError as exc:
 
 path = os.path.join(get_path(), "libs")
 dll_names = [
-    "PointCloudBlender.dll"
+    "PointCloudBlender.dll",
+    "HedgeLib.dll"
 ]
 
 pythonnet.load("coreclr")
@@ -39,22 +40,23 @@ for dll_name in dll_names:
 from PointCloudBlender import PointCloudReader
 from PointCloudBlender import ModelReader
 
-def importModel(i, importer, collection):
+def importModel(i, importer, parent):
     if os.path.exists(dirname(importer.filepath) + "\\" + i.ModelName + ".terrain-model"):
         model = ModelReader.Model(dirname(importer.filepath) + "\\" + i.ModelName + ".terrain-model", bpy.context.scene.HedgeNeedle)
         for Mesh in model.meshes:
             mesh1 = bpy.data.meshes.new(i.ModelName + " Mesh")
             mesh1.use_auto_smooth = True
             ob = bpy.data.objects.new(i.InstanceName, mesh1)
-            ob.location = (-i.Position.X, i.Position.Z, i.Position.Y)
-            ob.rotation_euler = (i.Rotation.X, i.Rotation.Z, i.Rotation.Y)
-            collection.objects.link(ob)
+            ob.location = (i.Position.X, i.Position.Y, i.Position.Z)
+            ob.rotation_euler = (i.Rotation.X, i.Rotation.Y, i.Rotation.Z)
+            ob.parent = parent
+            bpy.context.collection.objects.link(ob)
             bpy.context.view_layer.objects.active = ob
             ob.select_set(True)
             mesh = bpy.context.object.data
             bm = bmesh.new()
             for v in Mesh.verts:
-                bm.verts.new((-v.X, v.Z, v.Y))
+                bm.verts.new((v.X, v.Y, v.Z))
             list = [v for v in bm.verts]
             for f in Mesh.faces:
                 try:
@@ -62,6 +64,15 @@ def importModel(i, importer, collection):
                 except:
                     continue
             bm.to_mesh(mesh)
+
+            # Normals = []
+            # for f in bm.faces:
+            #     f.smooth=True
+            #     f.normal_flip()
+            #     for l in f.loops:
+            #         if Mesh.normals != []:
+            #             Normals.append((Mesh.normals[l.vert.index].X, Mesh.normals[l.vert.index].Y, Mesh.normals[l.vert.index].Z))
+            # bm.to_mesh(mesh)
 
             if importer.ImportUvs:
                 if Mesh.uvs != []:
@@ -73,12 +84,8 @@ def importModel(i, importer, collection):
                 if Mesh.uvs3 != []:
                     uv4_layer = bm.loops.layers.uv.new('UVMap4')
 
-                Normals = []
                 for f in bm.faces:
-                    f.smooth=True
                     for l in f.loops:
-                        if Mesh.normals != []:
-                            Normals.append(Mesh.normals[l.vert.index])
                         if Mesh.uvs != []:
                             l[uv_layer].uv[0]  = Mesh.uvs[l.vert.index].X
                             l[uv_layer].uv[1]  = Mesh.uvs[l.vert.index].Y
@@ -104,14 +111,19 @@ def importModel(i, importer, collection):
             else:
                 ob.data.materials.append(MeshMat)
 
-def importPointCloud(importer):
-    pc = PointCloudReader.LoadPointCloud(importer.filepath)
-    collection = bpy.data.collections.new(os.path.basename(importer.filepath))
-    bpy.context.scene.collection.children.link(collection)
+            # if Mesh.normals != []:
+            #     mesh1.normals_split_custom_set(Normals)
+            
+def importPointCloud(importer, filepath):
+    pc = PointCloudReader.LoadPointCloud(filepath)
+    o = bpy.data.objects.new(os.path.basename(filepath), None)
+    bpy.context.collection.objects.link(o)
     for i in pc:
         if "shd" in i.InstanceName and importer.ImportShadowModels:
             pass
         elif "shdw" in i.InstanceName and importer.ImportShadowModels:
             pass
         else:
-            importModel(i, importer, collection)
+            importModel(i, importer, o)
+    
+    o.rotation_euler = (math.radians(90), 0, 0)

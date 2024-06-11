@@ -9,11 +9,11 @@ bl_info = {
     "category" : "Generic"
 }
 
-import bpy
+import bpy, os
 
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, BoolProperty
-from bpy.types import Operator
+from bpy.props import StringProperty, BoolProperty, CollectionProperty
+from bpy.types import Operator, OperatorFileListElement
 
 from . import importPointCloud
 
@@ -39,7 +39,8 @@ class ImportPointCloud(Operator, ImportHelper):
 
     filename_ext = ".pcmodel"
     filter_glob: StringProperty(default="*.pcmodel", options={"HIDDEN"})
-    filepath: StringProperty(subtype='FILE_PATH')
+    files: CollectionProperty(name="File Path",type=OperatorFileListElement)
+    directory: StringProperty(subtype='DIR_PATH')
     ImportUvs: BoolProperty(name="Import UVs", description="If not needed, it is recommended to turn this off, because it does slow the import process.", default=True)
     ImportShadowModels: BoolProperty(name="Import Shadow Models", description="If not needed, it is recommended to turn this off, because it does slow the import process.", default=True)
 
@@ -51,7 +52,8 @@ class ImportPointCloud(Operator, ImportHelper):
             bpy.context.window_manager.popup_menu(hedgeneedleError, title = "Error")
             return {'FINISHED'}
         else:
-            importPointCloud.importPointCloud(self)
+            for i in self.files:
+                importPointCloud.importPointCloud(self, os.path.join(self.directory, i.name))
         return {"FINISHED"}
 
 def menu_func_import(self, context):
